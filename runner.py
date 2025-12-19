@@ -8,7 +8,7 @@ import platform
 SOLVER_FILE = 'MySolver4.py'
 # SOLVER_FILE = 'solver.py'
 # SOLVER_FILE = 'nonogram_solver.cpp'
-TIME_LIMIT_SECONDS = 1800  # 30 分鐘  
+TIME_LIMIT_SECONDS = 120  # 30 分鐘  
 
 # 編譯 C++ 程式
 def compile_cpp(cpp_file):

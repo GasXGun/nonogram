@@ -264,7 +264,7 @@ class NonogramSolver:
 # 主程式
 # ======================================================
 def main():
-    input_file = 'test_input.txt' 
+    input_file = 'taai2019.txt' 
     output_file = 'result_py2.txt'
     
     print(f"Parsing {input_file}...")
