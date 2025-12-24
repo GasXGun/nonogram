@@ -5,10 +5,12 @@ import os
 import platform
 
 # 設定要執行的檔案 (可以是 .py 或 .cpp)
-SOLVER_FILE = 'MySolver4.py'
+# SOLVER_FILE = 'MySolver_Parallel.py'
+SOLVER_FILE = 'MySolver5.py'
+# SOLVER_FILE = 'MySolver.py'
 # SOLVER_FILE = 'solver.py'
-# SOLVER_FILE = 'nonogram_solver.cpp'
-TIME_LIMIT_SECONDS = 120  # 30 分鐘  
+# SOLVER_FILE = 'cpp_solver.cpp'
+TIME_LIMIT_SECONDS = 300  # 30 分鐘  
 
 # 編譯 C++ 程式
 def compile_cpp(cpp_file):
