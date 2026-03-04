@@ -28,7 +28,8 @@ def is_valid_hint(hints, N=25):
 # ======================================================
 def parse_input_file(filename):
     """
-    讀取並解析輸入檔 (v11.0 Debug修正版)
+    讀取並解析輸入檔。
+    特色：針對 Nonogram pdf 轉檔常見的頁碼雜訊 (單獨的數字行) 進行智慧過濾。
     """
     puzzles = {}
     try:
@@ -42,6 +43,7 @@ def parse_input_file(filename):
     while idx < len(lines):
         line = lines[idx]
         
+        # 尋找題號
         if '$' in line:
             pid_match = re.search(r'\$(\d+)', line)
             if not pid_match:
@@ -53,6 +55,7 @@ def parse_input_file(filename):
             
             raw_hints_buffer = []
             
+            # 讀取直到下一題或檔案結束
             while idx < len(lines):
                 curr_line = lines[idx]
                 if '$' in curr_line: break
@@ -60,13 +63,12 @@ def parse_input_file(filename):
                 idx += 1
                 if not curr_line: continue
 
-                # =========== 關鍵修正區 ===========
-                # 正確移除 標籤
-                # 這裡使用 r'\' 來匹配中括號及其內容
-                clean_line = re.sub(r'\', '', curr_line)
+                # 清除 source 標籤
+                # 修正後的 regex，避免語法錯誤
+                clean_line = re.sub(r'\\', '', curr_line)
                 clean_line = re.sub(r'source:.*', '', clean_line) 
-                # =================================
                 
+                # 解析數字
                 clean_line = clean_line.split('#')[0]
                 numbers = re.findall(r'\d+', clean_line)
                 hints = [int(x) for x in numbers]
@@ -75,47 +77,43 @@ def parse_input_file(filename):
 
                 if is_valid_hint(hints, 25):
                     raw_hints_buffer.append(hints)
-                else:
-                    # Debug: 印出被丟棄的行，看看是不是誤殺
-                    if pid == "$4":
-                        print(f"[Debug $4] Dropped invalid line: {hints} (Original: {curr_line})")
 
-            # --- Debug: 檢查 $4 到底讀到了什麼 ---
-            if pid == "$4":
-                print(f"\n--- Debugging {pid} Hints (Total {len(raw_hints_buffer)} lines) ---")
-                for i, h in enumerate(raw_hints_buffer):
-                    # 印出前 5 行和最後 5 行就好，不用全部印
-                    if i < 3 or i >= len(raw_hints_buffer) - 3:
-                        print(f"Line {i}: {h}")
-                print("---------------------------------------\n")
-
-            # --- 雙向去噪邏輯 ---
-            while len(raw_hints_buffer) > 50:
-                first = raw_hints_buffer[0]
-                last = raw_hints_buffer[-1]
-                
-                # 判斷頁碼雜訊：單獨一個數字且小於 50
-                first_is_noise = (len(first) == 1 and first[0] < 50)
-                last_is_noise = (len(last) == 1 and last[0] < 50)
-                
-                if first_is_noise:
-                    print(f"[{pid}] Dropping START noise: {first}")
-                    raw_hints_buffer.pop(0)
-                elif last_is_noise:
-                    print(f"[{pid}] Dropping END noise: {last}")
-                    raw_hints_buffer.pop(-1)
-                else:
-                    # 針對 $7 等複雜情況，如果頭尾都不是明顯頁碼，優先丟棄尾部
-                    # (假設多餘的是下一題殘留資訊)
-                    print(f"[{pid}] Dropping extra line from END: {last}")
-                    raw_hints_buffer.pop(-1)
-
+            # --- 智慧過濾邏輯 ---
+            # 如果行數正確，直接使用
             if len(raw_hints_buffer) == 50:
                 col_hints = raw_hints_buffer[:25]
                 row_hints = raw_hints_buffer[25:]
                 puzzles[pid] = (col_hints, row_hints)
+            
+            # 如果行數過多，嘗試過濾「疑似頁碼」的行
+            elif len(raw_hints_buffer) > 50:
+                print(f"[{pid}] Found {len(raw_hints_buffer)} lines (expected 50). Filtering noise...")
+                
+                # 策略 1: 移除所有「長度為 1」的行 (針對頁碼如 [1], [7], [8])
+                # 注意：這假設合法的 25x25 提示通常不會只有一個數字，或者如果有，刪除後剛好湊滿 50 才是正確的。
+                filtered_hints = [h for h in raw_hints_buffer if len(h) > 1]
+                
+                if len(filtered_hints) == 50:
+                    print(f"[{pid}] Success! Filtered out single-number lines.")
+                    col_hints = filtered_hints[:25]
+                    row_hints = filtered_hints[25:]
+                    puzzles[pid] = (col_hints, row_hints)
+                else:
+                    # 策略 2: 如果策略 1 失敗 (例如刪太多了)，退回到「保留最後 50 行」
+                    # 這適用於雜訊都在前面的情況
+                    print(f"[{pid}] Filter strategy 1 failed (got {len(filtered_hints)}). Fallback to keeping last 50.")
+                    # 再次檢查開頭是否為雜訊 (如 $4 的情況)
+                    if len(raw_hints_buffer) == 51 and len(raw_hints_buffer[0]) == 1:
+                         final_hints = raw_hints_buffer[1:]
+                    else:
+                         final_hints = raw_hints_buffer[-50:]
+                         
+                    col_hints = final_hints[:25]
+                    row_hints = final_hints[25:]
+                    puzzles[pid] = (col_hints, row_hints)
+            
             else:
-                print(f"Error: Puzzle {pid} has {len(raw_hints_buffer)} lines. Skipping.")
+                print(f"Error: Puzzle {pid} only has {len(raw_hints_buffer)} valid lines. Skipping.")
         else:
             idx += 1
             

@@ -10,7 +10,7 @@ SOLVER_FILE = 'MySolver5.py'
 # SOLVER_FILE = 'MySolver.py'
 # SOLVER_FILE = 'solver.py'
 # SOLVER_FILE = 'cpp_solver.cpp'
-TIME_LIMIT_SECONDS = 300  # 30 分鐘  
+TIME_LIMIT_SECONDS = 60  # 30 分鐘  
 
 # 編譯 C++ 程式
 def compile_cpp(cpp_file):
